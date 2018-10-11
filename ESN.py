@@ -268,6 +268,7 @@ class ESN():
         #plt.figure()
         #plt.title('timeshift=%d'%(timeshift))
         #plt.plot(u_true,label='true')
+        print('n_reservoir===',self.n_reservoir)
         if self.n_inputs==1:
             len1=len(u_train)
             len2=len(u_valid)
@@ -279,7 +280,10 @@ class ESN():
         error_train=[]
         para=0
         if not ifload:
+            print('n_reservoir===',self.n_reservoir)
             self.update(u_train[:,:64],1)
+            print('shape allstate========',np.shape(self.allstate))
+            
             del self.allstate
             print('..\n initially updated and discarded the transient of 64 steps\n...')
             self.update(u_train,0)
@@ -308,11 +312,12 @@ class ESN():
             self.fit(u_train,u_target,y,1)
             self.predict()
             err1=self.err(self.outputs,u_target,1)
+            print('****training====',err1)
  
             self.allstate=temp2
             self.predict()
             err2=self.err(self.outputs,u_true,1)
-            
+            print('*****valid===',err2)
             #print('lamda===',lamda,'error===',err2)
             return err2 
         
@@ -321,25 +326,30 @@ class ESN():
         
         theta_error=0.1
         x_opt,f_opt,stepnum=goldenOpt(a,b,tune,theta_error,ifplot)
+        err2=self.err(self.outputs,u_true,-1)
+        print('testing classification error==',err2)
         
         self.allstate=temp1
+        print('shape allstate========',np.shape(self.allstate))
         self.predict()
         err1=self.err(self.outputs,u_target,-1)
-        print('training error==',err1)
+        err11=self.err(self.outputs,u_target,1)
+        print('training classification error==',err1)
+        print('training NMSE==',err11)        
         plt.figure()
-        plt.plot(self.outputs[0],'.',label='training output')
-        plt.plot(u_target[0],label='label')
+        plt.plot(self.outputs[0],'.',color='brown',markersize=1.2,label='training output')
+        plt.plot(u_target[0],color='dimgray',linewidth=0.8,label='label')
         plt.title('training')
         plt.legend()
 #        
         self.allstate=temp2
         self.predict()       
         plt.figure()   
-        plt.plot(self.outputs[0],'.',label='test output')
-        plt.plot(u_true[0],label='label')
+        plt.plot(self.outputs[0],'.',color='brown',markersize=1.2,label='test output')
+        plt.plot(u_true[0],color='dimgray',linewidth=0.8,label='label')
         plt.legend()
-##       
-        print('lambda==',10**x_opt,'minimum error==', f_opt,
+#       
+        print('lambda==',10**x_opt,'minimum testing NMSE==', f_opt,
               'stepnum==',stepnum)
         return f_opt,x_opt
         
@@ -447,50 +457,13 @@ class LESN(ESN):
         self.lastinput=np.reshape(self.lastinput, (len(self.lastinput),-1))
         self.bias=np.ones((1,self.lenth))
         self.allstate=np.vstack((self.bias,self.state))
-
+        if not ifrestart:
+            temp=np.delete(self.allstate,0,1)
+            del self.allstate
+            self.allstate=temp
+            del temp      
 
 class trivial(ESN):
     pass
 
-def test1():
-    u=Lorenz(len=10000)
-    u.downsample(10)
-    u.normalize()
-    u=u.get()
-    plt.figure()
-    plt.plot(u[0])
-    plt.figure()
-    plt.plot(u[2])
-    esn=ESN(n_inputs=1,n_outputs=1,n_reservoir=100,ifplot=1)
-    esn.initweights()
-    print(np.shape(u))    
-    erro=esn.test(u[0],u[2],0.8)
-    print('error====',erro)
-    plt.figure()
-    t=np.arange(0,esn.siglenth)
-    plt.plot(esn.outputs,color='black')
-    plt.plot(esn.test_real,color='red')
-    def get(self):
-        return self.u
-
-    plt.show()
-
-
-def test_timeShift(shift):
-    u=gen_Lorenz(len=1000) 
-    u=downsample(u)
-    u=np.array(u)    
-    plt.plot(u[0])
-    u0=normal(u[0,20:])
-    U=u0[shift:200+shift]
-    u0=u0[0:200]
-    utarget=np.array(U) 
-    esn=ESN(n_inputs=1,n_outputs=1,n_reservoir=200,ifplot=1)
-    esn.initweights()
-    esn.test(u0,utarget,0.7)
-    plt.figure()
-    t=np.arange(0,esn.siglenth)
-    plt.plot(esn.outputs,color='black')
-    plt.plot(esn.test_real,color='red')
-    plt.show()
 

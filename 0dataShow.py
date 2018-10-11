@@ -168,3 +168,52 @@ array([ 9, 10,  9,  9,  6,  7,  6,  1,  8,  7,  8,  6,  7,  6,  7,  0,  1,
     
     
 """
+
+
+
+#%% Compare Lasso, ESN, SVM 
+
+validEsn=np.load(os.path.join(path_data,'validESN.npy'))
+testEsn=np.load(os.path.join(path_data,'testESN.npy'))
+validLasso=np.load(os.path.join(path_data,'validLasso.npy'))
+testLasso=np.load(os.path.join(path_data,'testLasso.npy'))
+validSVM=np.load(os.path.join(path_data,'validSVM.npy'))
+testSVM=np.load(os.path.join(path_data,'testSVM.npy'))
+valid_label=np.load(os.path.join(path_data,'valid_label.npy'))
+test_label=np.load(os.path.join(path_data,'test_label.npy'))
+
+validEsn=np.reshape(validEsn,(1,len(validEsn)))
+validLasso=np.reshape(validLasso,(1,len(validLasso)))
+testEsn=np.reshape(testEsn,(1,len(testEsn)))
+testLasso=np.reshape(testLasso,(1,len(testLasso)))
+validEsn[validEsn>=0.5]=1
+validEsn[validEsn<0.5]=0
+testEsn[testEsn>=0.5]=1
+testEsn[testEsn<0.5]=0
+validLasso[validLasso>=0.5]=1
+validLasso[validLasso<0.5]=0
+testLasso[testLasso>=0.5]=1
+testLasso[testLasso<0.5]=0
+
+fig1 = plt.figure()
+plt.subplot(411)
+librosa.display.specshow(validEsn)
+plt.subplot(412)
+librosa.display.specshow(validLasso)
+plt.subplot(413)
+librosa.display.specshow(validSVM)
+plt.subplot(414)
+librosa.display.specshow(valid_label)
+
+
+
+fig2= plt.figure()
+plt.subplot(411)
+librosa.display.specshow(testEsn)
+plt.subplot(412)
+librosa.display.specshow(testLasso)
+plt.subplot(413)
+librosa.display.specshow(testSVM)
+plt.subplot(414)
+librosa.display.specshow(test_label)
+

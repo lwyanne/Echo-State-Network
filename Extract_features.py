@@ -12,7 +12,7 @@ from function import *
 
 path=os.path.abspath('.')
 path_train=os.path.join(path,'sources','audio_train')
-audio_train=[x for x in os.listdir(path_train) if os.path.isfile(os.path.join(path_train,x)) and os.path.splitext(x)[1]=='.ogg']
+audio_train=[x for x in os.listdir(path_train) if os.path.isfile(os.path.join(path_train,x)) and os.path.splitext(x)[1]=='.ogg'][0:5]
 path_data=os.path.join(path,'data')
 
 
@@ -22,7 +22,7 @@ flag=0
 
 for file in audio_train:
     print("dealing with %s" %file)
-    current_sample=mfcc(os.path.join(path_train,file),1)
+    current_sample=mfcc(os.path.join(path_train,file),1,4)
     print(".")
     current_teacher,dellist=match_label(get_label_file(path,file))
     print("..")
@@ -44,8 +44,8 @@ for file in audio_train:
 teacher=np.array(teacher)
 teacher=np.reshape(teacher,(1,np.size(teacher)))
 samples=samples.T
-np.save(os.path.join(path_data,'40ms_samples_51_delta'),samples)
-np.save(os.path.join(path_data,'40ms_teacher_51_delta'),teacher)
+np.save(os.path.join(path_data,'25ms_5samples'),samples)
+np.save(os.path.join(path_data,'25ms_5teacher'),teacher)
 
 
     

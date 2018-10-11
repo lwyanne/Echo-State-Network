@@ -197,21 +197,23 @@ def goldenOpt(a,b,f,Theta_error,ifplot):
     if ifplot:plt.plot(x,y)
     return (x_opt,f_opt,stepNum)
 
-def mfcc(filename,delta):
+def mfcc(filename,delta,framenum):
     y,sr=librosa.load(filename, sr=16000)
 #    plt.figure()
 #    plt.plot(y)
 #    plt.title('original audio')
 #    plt.xlabel('time')
 #    plt.ylabel('energy')
-    mfcc_feat=sf.mfcc(signal=y,samplerate=sr,winlen=0.04,nfft=1024,winstep=0.01,numcep=13,ceplifter=22)   #?????appendEnergy ceplifter?? 
-    if delta==1:
-        mfcc_delta=sf.delta(mfcc_feat,2) # calculate delta features based on preceding and following 2 frames
+    mfcc_feat=sf.mfcc(signal=y,samplerate=sr,winlen=0.025,nfft=512,winstep=0.01,numcep=13,ceplifter=22)   #?????appendEnergy ceplifter?? 
+    if delta==0:
+        return mfcc_feat
+    elif delta==1:
+        mfcc_delta=sf.delta(mfcc_feat,framenum) # calculate delta features based on preceding and following 2 frames
         return np.hstack((mfcc_feat,mfcc_delta))
     elif delta==2:
-        mfcc_delta=sf.delta(mfcc_feat,2)
-        mfcc_delta_2=sf.delta(mfcc_delta,2)
-        return np.hstack((mfcc_feat,mfcc(filename,1)))
+        mfcc_delta=sf.delta(mfcc_feat,framenum)
+        mfcc_delta_2=sf.delta(mfcc_delta,framenum)
+        return np.hstack((mfcc_feat,mfcc(filename,1,framenum)))
     else:
         return mfcc_feat
 
@@ -221,7 +223,7 @@ def get_label_file(path,filename):
     return annotAbs_path
 
 
-def match_label(file,winsize=0.04, step=0.010):
+def match_label(file,winsize=0.025, step=0.01, mode=0):
     """
     """
     nodes=[]
@@ -229,41 +231,63 @@ def match_label(file,winsize=0.04, step=0.010):
     y=[]
     s=f.readlines()
     i=1
-    for line in s:
-        line=line.strip()
-        line=re.split(r' *',line)
-        if 'no' in line[2]:
-            nodes.append((float(line[0])/0.025,0))
-            while (i-1)*step+winsize < float(line[1]):
-                y.append((i,0))
-                i+=1
-            if (i-1)*step+winsize<float(line[1])+0.0125:
+    if mode==1:
+        for line in s:
+                line=line.strip()
+                line=re.split(r' *',line)
+                if 'no' in line[2]:
+                    nodes.append((float(line[0])/0.025,0))
+                    while (i-1)*step+winsize < float(line[1]):
+                        y.append((i,0))
+                        i+=1
+                    if ((i-1)*step+winsize<float(line[1])+0.0125)  :
+                        y.append((i,-1))
+                        i+=1
+                    
+                        # del the frame which contain less than 50% singing      
+                else:
+                    nodes.append((float(line[0])/0.025,1))
+                    while (i-1)*step+winsize <float(line[1]):
+                        y.append((i,1))
+                        i+=1
+                    if (i-1)*step+winsize < float(line[1])+0.0125:
+                        y.append((i,1))
+                        i+=1
+    if mode==0:
+        # del the frame which is not full of vocals
+        for line in s:
+            line=line.strip()
+            line=re.split(r' *',line)
+            if 'no' in line[2]:
+                nodes.append((float(line[0])/winsize,0))
+                while (i-1)*step+winsize < float(line[1]):
+                    y.append((i,0))
+                    i+=1
                 y.append((i,-1))
                 i+=1
-                # del the frame which contain less than 50% singing      
-        else:
-            nodes.append((float(line[0])/0.025,1))
-            while (i-1)*step+winsize <float(line[1]):
-                y.append((i,1))
-                i+=1
-            if (i-1)*step+winsize < float(line[1])+0.125:
-                y.append((i,1))
-                i+=1
                 
+            else:
+                nodes.append((float(line[0])/winsize,1))
+                while (i-1)*step+winsize <float(line[1]):
+                    y.append((i,1))
+                    i+=1
+                y.append((i,-1))
+                i+=1
+        
     label=[x[1] for x in y if x[1]!=-1]
     del_list=[x[0] for x in y if x[1]==-1]      # Notice: min of index is 1 instead of 0
     return label, del_list
  
 
-def divide(nparray):
+def divide(nparray,divideNum):
     l=np.shape(nparray)[-1]
-    l0=l//10
-    refer=[list(range(i*l0,(i+1)*l0)) for i in range(9)]
-    refer.append(list(range(9*l0,l)))
+    l0=l//divideNum
+    refer=[list(range(i*l0,(i+1)*l0)) for i in range(divideNum-1)]
+    refer.append(list(range((divideNum-1)*l0,l)))
     
     dic=[]
     
-    for i in range(10):
+    for i in range(divideNum):
         train=np.delete(nparray,refer[i],axis=1)
         valid=nparray[:,refer[i]]
         dic.append((train,valid))

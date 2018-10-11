@@ -51,12 +51,17 @@ def esn(trsig,tarsig,testsig,real,n_inputs=26,n_reservoir=200,n_outputs=1,a=1,b=
     network.update(trsig[:,:64],1)
     del network.allstate
     network.update(trsig,0)
+    del trsig
     network.fit(network.allstate,tarsig,0)
+    network.predict()
+    print('training error==',network.err(network.outputs,tarsig,-1))
+    print('training error==',network.err(network.outputs,tarsig,1))
     del network.allstate
     network.update(testsig[:,:64],1)
     del network.allstate
     network.update(testsig,0)
     network.predict()
+    del testsig
     error=network.err(network.outputs,real,-1)
     print('successfully train the readout matrix\n\n ',np.shape(real))
     temp=network.outputs
@@ -78,11 +83,13 @@ for i in range(26):
     samples[i,:]=normal(samples[i,:],mode=1)
 
 
+
+divideNum=60
 #divide into train-valid set and test set
-tv_sam=samples[:,:-np.shape(samples)[-1]//11]
-tv_teach=teacher[:,:-np.shape(samples)[-1]//11]
-test_sam=samples[:,-np.shape(samples)[-1]//11:]
-test_true=teacher[:,-np.shape(samples)[-1]//11:]
+tv_sam=samples[:,:-np.shape(samples)[-1]//2]
+tv_teach=teacher[:,:-np.shape(samples)[-1]//2]
+test_sam=samples[:,-np.shape(samples)[-1]//2:]
+test_true=teacher[:,-np.shape(samples)[-1]//2:]
 
 
 
@@ -95,15 +102,15 @@ test_true=teacher[:,-np.shape(samples)[-1]//11:]
 
 matrix=[]
 
-dic_sam=divide(tv_sam)
-dic_teach=divide(tv_teach)
+dic_sam=divide(tv_sam,divideNum)
+dic_teach=divide(tv_teach,divideNum)
 error=[]
-i=3# i=0,1,2,....,9
+i=4# i=0,1,2,....,9
 ifload=0
 
-c=0.3
-n=400
-a,b=esn(dic_sam[i][0],dic_teach[i][0],dic_sam[i][1],dic_teach[i][1],n_inputs=26,n_reservoir=n,sparsity=5/n,sparsity_in=5/n,a=1,c=c,ifload=ifload)
+c=1
+n=100
+a,b=esn(dic_sam[i][0],dic_teach[i][0],dic_sam[i][1],dic_teach[i][1],n_inputs=26,n_reservoir=n,sparsity=1,sparsity_in=1,a=1,c=c,ifload=ifload)
 error.append(a)
 print('c==%f, spasity==%f,error==%f'%(c,n,a))
 
